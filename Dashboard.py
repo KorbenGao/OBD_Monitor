@@ -3,6 +3,7 @@ import threading
 import time
 from Cmd_Frame import Cmd_Frame
 import obd
+from tkinter.ttk import Progressbar
 
 
 class Dashboard:
@@ -68,7 +69,13 @@ class Dashboard:
             bd=20,
             padx=50,
             pady=50,
-        );
+        )
+
+        self.progress_value = tk.DoubleVar()
+        self.progress_value.set(0)
+        self.progress_bar = Progressbar(self.load_frame, orient=tk.VERTICAL, variable=self.progress_value)
+        self.progress_bar.grid(row=0, column=3, rowspan=2, sticky=tk.NS)
+
         self.load_frame.disable_size_change()
 
         # second row
@@ -148,6 +155,7 @@ def set_RPM(value_str):
 
 
 def set_load(value_str):
+    dashboard.progress_value.set(value_str.value)
     dashboard.load_frame.set_value(str(value_str.value))
 
 
@@ -173,12 +181,25 @@ def connection_thread():
     connection.watch(obd.commands.LONG_FUEL_TRIM_1, callback=set_long_fuel)
     connection.start()
     # the callback will now be fired upon receipt of new values
-    time.sleep(60)
     connection.stop()
 
+
+def test():
+    while (True):
+        print(str(dashboard.progress_value.get()) + '\n')
+        dashboard.progress_value.set(dashboard.progress_value.get() + 1)
+        dashboard.load_frame.value.set(str(dashboard.progress_value.get()))
+        time.sleep(0.5)
+
+
+print(obd.scan_serial())
 
 t = threading.Thread(target=connection_thread, name='thread-connection')
 t.setDaemon(True)
 t.start()
+
+test = threading.Thread(target=test, name='thread-test')
+test.setDaemon(True)
+test.start()
 
 dashboard.start()
